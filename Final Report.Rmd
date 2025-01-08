@@ -1,0 +1,1324 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+geometry: margin=1in
+fontsize: 12pt
+mainfont: Arial
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+::: {style="text-align: center; margin-top: 2cm; margin-bottom: 30cm;"}
+# **Fueling the Future**
+
+### Predicting CO2 Emissions from Car Data
+:::
+
+::: {style="text-align: center;"}
+## Team Members
+
+Carlos Arteaga (30043610)\
+Abdul Suhaib (30124033)\
+Nadeem Bishtawi\
+Yifeng Liang (30072968)\
+Michael Moon (30270188)
+:::
+
+# 1. INTRODUCTION
+
+## MOTIVATION
+
+### Context
+
+The transportation sector is a significant contributor to global
+greenhouse gas emissions, with vehicles accounting for a substantial
+portion of these emissions. In Canada, understanding and reducing CO2
+emissions from vehicles is a critical step towards meeting national and
+international climate goals. To address this, we analyze data from the
+Vehicle Fuel Consumption Ratings Dataset (2004-2024), published by
+Natural resources Canada and available through the Open Canada portal
+under the Open Government License (Fuel Consumption Ratings - Open Government 
+Portal, n.d.). See references URL. This dataset provides comprehensive
+details on vehicle specifications, fuel consumption, and estimated CO2
+emissions, collected in Canada since 1995, although our focus was in the last
+20 years. The data is clearly described in the sections below and the URL for
+the metadata can be found in the references (see 'Understanding the Tables').
+
+### Problem
+
+The core problem we aim to address is the need for actionable insights
+into the factors driving CO2 emissions in passenger vehicles. Despite
+extensive research on vehicle emissions, there is room to deepen our
+understanding of the detailed relationships between vehicle
+characteristics-such as engine size, fuel type and fuel consumption- and
+CO2 emissions. In Canada, the transportation sector accounts for 21% of
+all greenhouse gas emissions, with road transportation responsible for
+the majority at 156 megatonnes of CO2 equivalent in 2019. Passenger
+vehicles alone contributed 91 megatonnes of CO2 equivalent, reflecting
+an 8.9% increase since 2005, despite improvements in fuel efficiency
+(Transport Canada, 2022). These trends underscore the critical need to
+identify the factors driving CO2 emissions in passenger vehicles. By
+applying data and visual analytics we propose a solution to uncover
+these relationships and offer predictive models to inform decisions by
+manufacturers, consumers, and policymakers.
+
+### Challenges
+
+Analyzing CO2 emissions presents several challenges. The dataset spans
+20 years and includes a wide range of variables, requiring extensive
+cleaning and preprocessing to ensure accuracy and consistency. Balancing
+model complexity and interpretability is another key difficulty,
+particularly when working with mixed categorical and numerical
+predictors.
+
+Additionally, external variability, such as regional climates and
+driving habits introduce noise that the dataset cannot account for. The
+data is derived from laboratory-controlled testing as specified by
+EnerGuide labels and 5-cycle testing procedures. These standardized
+methods ensure consistent and comparable results across different
+vehicle models, although real-world driving variability may still impact
+actual fuel consumption and emissions. Unfortunately, there is no other mention 
+as to how the data was collected. We would like to assume that coming from
+a reputable government source, special measures were taken to ensure an unbiased 
+sample random. Government agencies should be unbiased when providing consumers
+information about products, and if there were any biases, for example favoring a
+specific car make over another one, this would be a huge display of 
+unprofessionalism on the part of the Government of Canada and the agency 
+responsible for this report.
+
+------------------------------------------------------------------------
+
+## OBJECTIVES
+
+### Overview
+
+The intent of this project is to analyze, model and visualize the
+factors influencing CO2 emissions in passenger vehicles across Canada.
+Using the Vehicle Fuel Consumption Ratings Dataset, we aim to identify
+trends, provide actionable insights and build predictive models to aid
+in understanding emissions.
+
+### Goals & Research Questions
+
+Our project focuses on the following goals and questions:
+
+-   **Goal 1**: Develop a multiple linear regression model to predict
+    CO2 emissions based on vehicle characteristics
+    -   **Research Question**: What are the key vehicle specifications
+        that significantly influence CO2 emissions?\
+-   **Goal 2**: Evaluate the impact of fuel efficiency on emissions.
+    -   **Research Question**: What is the relationship between fuel
+        consumption and CO2 emissions?
+
+By addressing these questions, this project contributes to the broader
+goal of reducing transportation related emissions and supporting
+conscious environmental practices.
+
+------------------------------------------------------------------------
+
+# 2. METHODOLOGY
+
+## Data
+
+We will be conducting our analysis using data from Stats Canada. The
+data is on fuel consumption and car specifications for a variety of
+different cars sold in Canada from 2004 to 2024. This cross-sectional,
+annually collected fuel consumption data is from the fuel consumption
+ratings search tool and from the EnerGuide label, which is used as a
+standard by manufacturers with controlled laboratory testing and
+analytical procedures. This data is openly published by Natural
+Resources Canada and is under an Open Government License. The license
+allows users to utilize the data in various ways such as publishing,
+modifying, adapting or distributing royalty-free if data is credited to
+be published on Stats Canada and proper acknowledgements to the source
+are given. Carbon dioxide emissions for vehicles in this data were
+estimated from Environment and Climate Change Canada. 
+
+As mentioned, our data comes from merging dataset containing data from 2004 to 
+2024. Our final merged data set contains 21,348 rows, and each variable is 
+explained in the following table. 
+
+```{r, echo=FALSE}
+library(knitr)
+data <- data.frame(
+  Variable = c("Model year", "Make (hidden)", "Model (hidden)", "Vehicle class", "Engine size (L)", "Cylinders", "Transmission", "Fuel type", 
+               "City (L / 100km)", "Highway (L / 100km)", "Combined (L / 100km)", "Combined (mpg)", "CO2 emissions (g / km)", 
+               "CO2 rating", "Smog rating"),
+  VariableType = c("Quantitative", "Qualitative", "Qualitative", "Qualitative", "Quantitative", "Quantitative", "Qualitative", "Qualitative",
+                    "Quantitative", "Quantitative", "Quantitative", "Quantitative", "Quantitative", "Qualitative", "Qualitative"),
+  DataType = c("Numeric", "Text", "Text", "Text", "Numeric", "Numeric", "Text", "Text", "Numeric", "Numeric", "Numeric", "Numeric", 
+                "Numeric", "Text", "Text"),
+  VariableDescription = c("The model year of the vehicle.", "The make of the vehicle.", "The name of the vehicle.", "The class of the vehicle.", 
+                           "The engine size of the vehicle.", "The number of cylinders of the vehicle.", "The transmission type of the vehicle.",
+                           "The fuel type the vehicle uses.", "The fuel mileage in the city for the vehicle.", "The fuel mileage on the highway for the vehicle.", 
+                           "The combined mileage of the vehicle in liter per 100 km.", "The combined mileage of the vehicle in miles per gallon.", 
+                           "The amount of CO2 emissions emitted by the vehicle.", "The CO2 rating for the vehicle.", "The smog rating for the vehicle.")
+)
+kable(data)
+```
+
+###### Table 1: List of all variables within the fuel consumption datasets utilized for our analysis
+
+For our analysis, we will be utilizing CO2 emissions (g/km) as our focal
+response variable (table 1). CO2 emissions are a continuous,
+quantitative variable, and NOT a proportion, percentage, category, or
+binary variable. We will consider vehicle class, engine size, cylinders,
+transmission, fuel type, and combined fuel consumption as our potential
+independent variables (table 1). We believe these are key metrics that
+when modeled will help explain and predict the values obtained for our
+response variable of CO2 emissions.
+
+## Approach
+
+The approach we will use for analysis on our fuel consumption data is
+multiple linear regression. To prepare our data for analysis, we started by 
+merging data from multiple data sets from different years. The fuel 
+consumption data sets we are utilizing contain either annual car metric data or 
+car metric data that spans over multiple years. All columns are consistent in
+nomenclature across data sets except for smog rating and CO2 rating.
+Because of this, smog rating and CO2 rating will be omitted from the
+analysis. We combined each data set by using concatenation by column
+names, which allowed us to effectively stack the data sets on top of one
+another. We then utilized sorting functions to sort primarily by year
+and secondarily by model. Based on this initial cleaning, we still had
+thirteen independent variables in our data and needed to look for ways
+to effectively reduce our model further before continuing to analysis.
+
+We started off by assessing the independent variables we have and
+considering removing unnecessary or redundant variables. Based on domain 
+knowledge and research we found some of the most important factors that 
+contribute to CO2 emissions (Greenhouse Gas Emissions From a Typical Passenger 
+Vehicle | US EPA, 2024). 
+
+Initially, we chose to remove the variables model year, vehicle make, and vehicle 
+model from the data model. We chose to remove these variables due to them not 
+being key factors in CO2 emissions (Greenhouse Gas 
+Emissions From a Typical Passenger Vehicle | US EPA, 2024). Our objective is not to
+compare the different makes and models but just to get a general understanding
+of the factors that contribute to CO2 emissions. On top of that, the year column
+does not provide continuity for the same make and model (since this is not a
+time series), and therefore only represents a snapshot in time.Model year, 
+vehicle make, and vehicle model are large categorical variables that would
+be hard to simplify into more general categories, which further strengthened are
+notion to remove them. Next we focused on vehicle class, and it can play an 
+important role in CO2 emissions, but this is largely due to the vehicle's 
+engine, since it has to be able to support the vehicle's weight. Therefore, 
+after serious consideration, we decided to focus instead on the engine qualities
+that we had access to (engine size and cylinders). 
+
+Moving on to transmission type, we conclude it wasn't vital (Greenhouse Gas 
+Emissions From a Typical Passenger Vehicle | US EPA, 2024) and conclude it could
+be removed. Another important selection was that of the fuel consumption 
+variables. Fuel consumption is one of the most vital parts of CO2 emissions 
+but we have 4 variables city consumption in litters per 100km,  highway 
+consumption in litters per 100km, combined consumption in litters per 100km and 
+combined consumption in miles per gallon. We initially got rid of the combined 
+consumption in miles per gallon, since it's the same as the litter per kilometer
+, and we later decided to get rid of the combined litters per kilometer because 
+of the overlap in scope and the risk of collinearity. As you will see from the 
+initial steps of our model selection, we found collinearity between city and 
+highway fuel consumption and ended up using the combined fuel efficiency in 
+litter per 100 km as our only fuel consumption varaible. 
+
+From this, we reached our verdict to conduct analysis using CO2
+emissions as our response variable and keeping independent variables of
+engine size, cylinders, fuel type, and combined (average
+of highway/city) fuel consumption in litter per 100 km. We will be performing
+multiple linear regression analysis with our wrangled data to make an accurate 
+model that can predict CO2 emissions based off these independent factors. We
+will be running a series of tests as outlined in our workflow (figure 1)
+to achieve this goal. All tests in our model will be completed at
+$\alpha$ = 0.01. Our null hypothesis is that none of our independent
+variables selected will influence our response variable of CO2
+emissions. The alternative hypothesis is that at least one of our
+independent variables will influence our response variable. We chose to
+use a small alpha value to reduce the risk of false positives and allow
+us to have more confidence in the independent variables in our model.
+Since we are working with many variables, we felt it appropriate to
+stick to conclusions based off a higher confidence level.
+
+## Workflow
+
+![](Picture1.png)
+
+###### Figure 1: Visual representation of the project workflow.
+
+As shown above, our workflow will involve a series of creating and
+testing models until an ideal final model is found. After cleaning the
+data, we will be completing manual and step wise regression on our full
+additive model, removing any variables that fall beneath the
+significance level of 0.01 via their t-statistic in the model. After
+ensuring we have tested for collinearity, we will test interactive
+effects and retain any interactions with a p-value of less than 0.01. We
+will then test our interactive model against our additive model via
+ANOVA test to confirm which model is the best model.
+
+From there, we will complete a series of assumption tests to ensure
+linearity, independence, equal variance, and normality are met well
+assessing if any outliers are present. If linearity is not met, we will
+test our model against models with higher order terms to see if it
+improves our results. We will test independence by plotting residuals
+data to conclude whether there is correlation or spatial association
+seen in the data. We will plot fitted values vs the square root of
+standard residuals in tandem with completing a Breusch-Pagan test to
+conclude whether or not there is heteroscedasticity and resolve it
+through transformations if necessary. To check normality, we will use
+histograms and QQ plots to visually access the data as well as
+completing a Shapiro-Wilk normality test. Finally, we will check for
+outliers by using residual vs leverage plots and utilizing Cook’s
+distance.
+
+Once assumption testing is completed, we will then assess whether we
+have been able to successfully meet assumptions to the standard we feel
+appropriate for our model. If it is concluded that assumptions are not
+adequately met, the model will be reassessed starting at the additive
+stage with any changes necessary implemented from the results of
+assumption testing. If the assumptions are found to be met, the final
+model will be reached by creating a full model and sub-models that are
+representative of the coefficients found in the multiple linear
+regression analysis.
+
+## Contributions
+
+Throughout our project, we implemented a highly collaborative approach
+to team tasks. During data collection, each team member investigated two
+potential data sets. We went over each data set together to find the
+most optimal data for a multiple linear regression analysis. After
+deciding on the best data set, we have met weekly to delegate tasks and
+set internal deadlines to ensure our analysis was completed before the
+project deadline. We have worked as a team collaboratively throughout
+the project, but here are some of the general tasks that each team
+member has contributed to:
+
+```{r, echo=FALSE}
+contributions <- data.frame(
+  Group_Member = c("Carlos Arteaga", "Yifeng Liang", "Michael Moon", "Abdul Suhaib", "Nadeem Bishtawi"),
+  Tasks_Assigned = c("EDA and additive/ interactive modelling", "Interpretation of models and assumption testing", "Methodology, workflow and report writing", "Assumption testing and discussion writing", "Data cleaning, merging and report writing")
+)
+kable(contributions)
+```
+
+###### Table 2: Task Distribution Across Team Members
+
+Each team member was expected to contribute as equally as possible to
+the project throughout the process, which we feel we have achieved as a
+team. While the tasks above are relative roles that team members took
+on, there were many overlaps in tasks and teammates were always open to
+helping one another to ensure the project was successful. We achieved
+this success through maintaining open communication, assigning clear
+delegation of tasks, and staying accountable to our teammates throughout
+the process.
+
+------------------------------------------------------------------------
+
+# 3. RESULTS OF THE ANALYSIS
+
+```{r, echo=FALSE}
+library(ggplot2)
+library(olsrr)
+library(GGally)
+library(lmtest)
+library(MASS)
+library(mctest)
+```
+
+Our data set structure looks as follows:
+
+```{r, echo=FALSE}
+fuel4=read.csv("cleanv7_grouped_vechclass.csv", header = TRUE)
+head(fuel4)
+```
+
+###### Table 3: Data table that shows all variables that will used for modelling from our fuel consumption data set.
+
+To start analyzing the data, we first creating scatter plots to be able
+to properly assess if linearity exists in our independent variables.
+
+```{r, echo=FALSE}
+# Continuous variables
+continuous_vars <- c("City_Lp100km", "Highway_Lp100km", "Engine_size_L", "Cylinders")
+
+# List of categorical variables
+categorical_vars <- c("Fuel_type")
+
+for (var in continuous_vars) {
+  plot <- ggplot(fuel4, aes_string(x = var, y = "CO2_emissions_gpkm")) +
+    geom_point(color = "blue", alpha = 0.6) +  # Scatter plot
+    labs(title = paste("Scatter Plot of CO2 Emissions vs", var),
+         x = var,
+         y = "CO2 Emissions (g/km)") +
+    theme_minimal()
+  
+  print(plot) 
+}
+
+plot <- ggplot(fuel4, aes_string(x = "Fuel_type", y = "CO2_emissions_gpkm")) +
+geom_jitter(color = "blue", alpha = 0.6, width = 0.2) +  # Jittered plot for categorical vs continuous
+labs(title = paste("CO2 Emissions by", "Fuel_type"),
+     x = "Fuel_type",
+     y = "CO2 Emissions (g/km)") +
+theme_minimal() +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better readability
+print(plot) 
+
+```
+
+###### Figure 2-6: Scatter plots that represent City fuel consumption, highway fuel consumption, engine size, cylinder amount, and fuel type vs the response variable of CO2 emissions (respectively). These figures can help tell us if linearity is present against the response variable.
+
+Looking at our data, we can see linearity among the majority of
+variables. There are some concerns as well though, as we can see that
+fuel consumption data holds a high risk of being collinear. To start, we
+created an additive multiple linear regression model. We started with
+all variables included in the model, and reduced the model until only
+significant variables remained:
+
+### FULL ADDITIVE MODEL
+
+Ho: the coefficient is = 0 (meaning there is no impact on the y
+variable) $$
+H_0: βk = 0
+$$ Ha: the coefficient is not equal to 0 (meaning there is impact on the
+y variable) $$
+H_a: βk \neq 0
+$$
+
+$\alpha=0.01$
+
+```{r, echo=FALSE}
+full_additive_model = lm(CO2_emissions_gpkm ~ . - Vehicle_class - Transmission - Combined_mpg - Combined_Lp100km, data = fuel4)
+summary(full_additive_model)
+```
+
+###### Table 4: Summary table that shows our initial full additive model for independent variables against CO2 emissions.
+
+To find the best model, we used p-values from t-statistics of each
+independent variable and assess if they are less than our significance
+level of 0.01. We removed variables manually until we reached a point
+where all independent variables in the model held significance.
+
+All p values for each individual coefficient are \< than 0.01, thus we
+can reject the null hypothesis for each term and conclude that they are
+all significantly impacting CO2 emissions.
+
+### TEST FOR MULTICOLLINEARITY
+
+Before we move on we tested for collinearity between independent
+variables due to the results from our scatter plots. We performed a VIF
+test (Variance inflation factor) on the predictors to test collinearity:
+
+```{r, echo=FALSE}
+imcdiag(full_additive_model, method="VIF")
+```
+
+###### Table 5: Summary table that shows results from our VIF test for multicollinearity from the full additive model.
+
+We can see that VIF detection shows us multicollinearity between two
+types of fuel as well as city and highway fuel consumption. Since we can
+only entirely remove or keep fuel type, we will keep it in the model.
+For city and highway fuel consumption, we decided the smartest approach
+would be to remove them and consider another representative metric of
+fuel consumption. Luckily, our data contains combined fuel consumption,
+which is representative of both highway and city fuel consumption.\
+
+### REDUCED ADDITIVE MODEL
+
+Ho: the coefficient is = 0 (meaning there is no impact on the y
+variable) $$
+H_0: βk = 0
+$$ Ha: the coefficient is not equal to 0 (meaning there is impact on the
+y variable) $$
+H_a: βk \neq 0
+$$
+
+$\alpha=0.01$
+
+```{r, echo=FALSE}
+full_additive_model2 = lm(CO2_emissions_gpkm ~ . - Vehicle_class - Transmission - Combined_mpg - Highway_Lp100km - City_Lp100km, data = fuel4)
+summary(full_additive_model2)
+```
+
+###### Table 6: Summary table that shows our reduced additive model for independent variables against CO2 emissions.
+
+Once more, all p-values for each individual coefficient are \< than
+0.01, thus we can reject the null hypothesis for each term and conclude
+that they are all significantly impacting CO2 emissions.
+
+### RETEST FOR MULTICOLLINEARITY
+
+```{r, echo=FALSE}
+imcdiag(full_additive_model2, method="VIF")
+```
+
+###### Table 7: Summary table that shows results from our VIF test for multicollinearity.
+
+We were able to successful navigate past multicollinearity based off the
+VIF given above, and now are ready to move on to next steps in
+modelling.
+
+### STEPWISE REGRESSION
+
+To further validate our additive model, we chose to run a stepwise
+regression on our data:
+
+```{r, echo=FALSE}
+cars_stepwise1=ols_step_both_p(full_additive_model2,p_enter = 0.01, p_remove = 0.1, details=FALSE)
+summary(cars_stepwise1$model)
+```
+
+###### Table 8: Summary table that shows results from our stepwise regression test on the reduced additive model.
+
+The stepwise regression gave us the same results as our manual additive
+modelling, which further validates that we have isolated the best
+independent variables for multiple linear regression
+
+### BEST SUBSET
+
+Lastly, we chose to look at the best subset of our model to see which
+subset additive model is most ideal:
+
+```{r, echo=FALSE}
+cars_best_model1=ols_step_best_subset(full_additive_model2, details=TRUE) 
+cars_best_model1$metrics
+```
+
+###### Table 9: Summary table that shows results from our subset regression test on the reduced additive model.
+
+Based on which subset has the highest $R^{2}_{adj}$ and the lowest AIC,
+the best model is model 4 including: Engine_size_L Cylinders Fuel_type
+Combined_Lp100km. This agrees with the results from our stepwise model.
+
+These results confirm that our final additive model is:
+
+```{r, echo=FALSE}
+summary(full_additive_model2)
+```
+
+### INTERACTION MODEL
+
+Ho: the coefficient is = 0 (meaning there is no impact on the y
+variable) $$
+H_0: βk = 0
+$$ Ha: the coefficient is not equal to 0 (meaning there is impact on the
+y variable) $$
+H_a: βk \neq 0
+$$
+
+$\alpha=0.01$
+
+```{r, echo=FALSE}
+car_interaction_model1 = lm(CO2_emissions_gpkm ~(Engine_size_L+Cylinders+Fuel_type+Combined_Lp100km)^2, data = fuel4)
+summary(car_interaction_model1)
+```
+
+###### Table 10: Summary table that shows results from our full interaction model.
+
+We can see that the interaction between engine size and fuel type have p
+values \> 0.01 on all 4 categories, therefore, we fail to reject the
+null saying that these interaction are = 0, meaning that they do not
+have a significant impact on CO2 emissions. We will remove these
+interaction and fit the model again:
+
+```{r, echo=FALSE}
+car_interaction_model2 = lm(CO2_emissions_gpkm ~Engine_size_L+Cylinders+Fuel_type+Combined_Lp100km+Engine_size_L*Cylinders+Engine_size_L*Combined_Lp100km+Cylinders*Fuel_type+Cylinders*Combined_Lp100km+Fuel_type*Combined_Lp100km, data = fuel4)
+summary(car_interaction_model2)
+```
+
+###### Table 11: Summary table that shows results from our reduced interaction model.
+
+According to the hierarchical principle, we cannot remove a main effect
+if the interaction is significant. Similarly when fitting a model with
+categorical variables, we cannot remove a single categorical
+interaction, for example fuel type N and combined LP100km. In cases like
+this, we can only remove the whole category or not, and since the other
+categories have meaningful interaction we will not remove any other
+interactions from the model.
+
+Since all interactions have p values less than our significance value of
+0.01, we reject the null hypothesis in favor of the alternative
+hypothesis that all interactions have a significant impact on CO2
+emissions.
+
+### COMPARING MODELS (USING ANOVA, $R^{2}_{adj}$, and RSE)
+
+We tested our additive and interaction models against one another to
+help confirm which model is better using an ANOVA test. Here, we tested
+to see if there is significant evidence at a 0.01 level using
+f-statistic:
+
+Ho: (reduced model is better because additional predictors in the full
+model do not significantly improve the model) $$
+H_0: 𝛽𝑟+1 = 𝛽𝑟+2...= 𝛽𝑝 = 0
+$$ Ha: (larger interaction model is better because at least one of the
+coefficients of the additional predictors is not equal to zero, meaning
+that adding these predictors improves the model) $$
+H_a: \text{at least one } \beta_i \neq 0
+$$
+
+```{r, echo=FALSE}
+anova(full_additive_model2,car_interaction_model2)
+```
+
+###### Table 12: Summary table that shows results from our ANOVA test comparing or additive and interactive models from previous results.
+
+As we can see from our anova test, our p-value is less than 0.01. At a
+significance level of 0.01, we can confirm that our interactive model
+yields better results than our additive model.
+
+Next, we compared $R^{2}_{adj}$ and RSE between the two models:
+
+```{r, echo=FALSE}
+print(paste("Adjusted R-squared for final additive model:", round(summary(full_additive_model2)$adj.r.squared, 4)))
+print(paste("RSE for final additive model:", round(sigma(full_additive_model2), 4)))
+
+
+print(paste("Adjusted R-squared for final interaction model:", round(summary(car_interaction_model2)$adj.r.squared, 4)))
+print(paste("RSE for final interaction model:", round(sigma(car_interaction_model2),4 )))
+```
+
+We can see the $R^{2}_{adj}$ for the interaction model is higher and
+hence better. The interactive model explains 99.81% of the variation in
+the CO2 emissions. This also accounts for the number of x variables in
+the model, therefore providing an even better metric than $R^{2}$.
+
+We can also see that the RSE for the interaction model is lower and
+hence better. RSE demonstrates how much of the real values deviate from
+the fitted values.An RSE of 2.7581 says that the average difference
+between the observed and fitted values is 2.76 grams per kilometer in
+CO2 emissions. We always want a low RSE because we want to model to fit
+the data as best as possible, but a lot of times it's hard to know if
+the RSE is low or not when we don't have a reference point.To get an
+idea of how much this 2.76 average variation is, we can compare it to
+the full range of value in the Y variable, where we get the RSE multiply it by
+100 and divide by the full range of the Y variable. 
+
+```{r, echo=FALSE}
+range_of_y = max(fuel4$CO2_emissions_gpkm) - min(fuel4$CO2_emissions_gpkm)
+RSE_model = sigma(car_interaction_model2)
+total = (RSE_model*100) / range_of_y #turning RSE into a percentage and dividing by the total range in Y, or normalizing RSE
+total
+```
+
+Now we get a percentage that works as reference point and demonstrates the the 
+RSE tells us that the average prediction error of our model is about 0.54% of the
+total range of the CO2 emissions variable.
+
+## Residual analysis: Checking regression assumptions
+
+### 1. Linearity Assumption
+
+Residuals VS fitted values:
+
+```{r, echo=FALSE}
+ggplot(car_interaction_model2, aes(x=.fitted, y=.resid)) +
+geom_point(colour = "purple") +
+geom_hline(yintercept = 0) +
+geom_smooth(colour = "green4")+
+ggtitle("Residual plot: Residual vs Fitted values")
+```
+
+###### Figure 7: Plot from our interaction model comparing fitted values against residual values to assess linearity.
+
+We can see that there doesn't seem to be any discernible patterns here,
+but we can look at a pairwise plot to investigate further. 
+
+We will create a subset of the data to be able to look at pairwise plots
+for the predictors against the CO2 emissions.
+
+```{r, echo=FALSE}
+fuel_subset= c("CO2_emissions_gpkm", "Cylinders", "Combined_Lp100km","Engine_size_L", "Fuel_type")
+fuel4_sub= fuel4[,fuel_subset]
+#fuel4_sub
+```
+
+**Pairwise plot**
+
+```{r, echo=FALSE}
+ggpairs(fuel4_sub,lower = list(continuous = wrap("smooth", color = "red"),combo = "facethist",discrete = "facetbar",na = "na"),progress = FALSE)
+```
+
+###### Figure 8: Pairwise plotting our variables allows us to see how CO2 compares to our independent variables, and if any higher order relationships may exist. In this case, no higher order relationships are apparent.
+
+Here we are only interested in the intersection of the Y var (CO2
+emissions) VS the predictors. That means that we only care about the
+first column of the pairwise plot. All four plots seem to show a very
+clear straight line, which supports our previous plot and concludes that
+the linearity assumption is met.
+
+### 2. Independence assumption
+
+When choosing our data, we made sure not to chose time-series data for
+this exact reason. The CO2 emission measurements were made at a single
+point in time and do not represent a consecutive measurement over time
+for the same vehicle (cross-sectional data). Thus, our data is not
+a time-series and our subjects are not related to time or space, and we
+can be sure that their measurements are independent.
+
+### 3. Equal Variance assumption
+
+Let's start by plotting plot the residual and scale-location plot.
+
+```{r, echo=FALSE}
+#residual
+plot(car_interaction_model2, which=1)
+#scale-location
+plot(car_interaction_model2, which=3)
+```
+
+###### Figure 9-10: Residual vs Fitted and Scale-Location plots that are used to assess equal variance in the model by considering if there are any abnormal, non-linear shapes in the plots.
+
+We can see from the residuals VS fitted plot above that there doesn't
+seem to be any clear funneling effects, but the scale location plot's
+line doesn't seem entirely horizontal. Let's look at a another
+scale-location plot to look at this in more detail.
+
+```{r, echo=FALSE}
+ggplot(car_interaction_model2, aes(x=.fitted, y=sqrt(abs(.stdresid)))) +
+  geom_point(colour = "purple") +
+  geom_hline(yintercept = 0) +
+  geom_smooth(method = "loess", colour = "green4") +
+  ggtitle("Scale-Location plot : Standardized Residual vs Fitted values")
+```
+
+###### Figure 11: More in depth Scale-Location plot. This plot shows that there is curvature on the right side of the graph, which may indicate heteroscedasticity.
+
+We can see that the line is not entirely horizontal specifically towards
+the right where it curves upwards. This could be an indicator of
+heteroscedasticity. To check for this, we performed the Breusch-Pagan to
+detect heteroscedasticity.
+
+Our hypotheses are the following:
+
+Homoscedasticity is present, or we have equal variance: $$
+H_0: \sigma_1^2 = \sigma_2^2 = \cdots = \sigma_n^2
+$$ Heteroscedasticity is present, or we have unequal variance: $$
+H_a: \text{At least one } \sigma_i^2 \text{ is different from the others, where } i = 1, 2, \ldots, n
+$$
+
+```{r, echo=FALSE}
+bptest(car_interaction_model2)
+```
+
+We can see a p-value is \< 2.2e-16, less than the significance level of
+0.01. This means that we reject the null hypothesis and conclude that we
+do have heteroscedasticity.
+
+In order to fix this, we will try a BOX COX transformation. To complete
+a BOX COX transformation, we first we need to find the best lambda:
+
+**FINDING THE BEST LAMBDA**
+
+We have automated this process in R where it first starts with the widest 
+possible range from -5 to 5. It then takes that lambda and adds +0.5 and 
+subtracts -0.5 to refine the value, and then once more adding -0.1 and 0.1.
+This provided the best lambda which we can use for the box cox transformation. 
+
+```{r, echo=FALSE}
+# Initial broad search
+bc = boxcox(car_interaction_model2, lambda=seq(-5, 5, by=0.5))
+bestlambda = bc$x[which.max(bc$y)]
+```
+
+###### Figure 12: Broad search to find best lambda value.
+
+```{r, echo=FALSE}
+# Refine the range based on initial best lambda
+bc_refined = boxcox(car_interaction_model2, lambda=seq(bestlambda-0.5, bestlambda+0.5, by=0.1))
+bestlambda_refined = bc_refined$x[which.max(bc_refined$y)]
+```
+
+###### Figure 13: Refined search to find best lambda value.
+
+```{r, echo=FALSE}
+# Fine-tuning
+bc_fine = boxcox(car_interaction_model2, lambda=seq(bestlambda_refined-0.1, bestlambda_refined+0.1, by=0.01))
+bestlambda_fine = bc_fine$x[which.max(bc_fine$y)]
+
+bestlambda_fine
+```
+
+###### Figure 14: Final lambda found through using boxcox plotting.
+
+We can see that the best lambda is 0.989899 and we will fit the model using this
+value for the BOX COX transformation:
+
+**BOX COX INTERACTION MODEL**
+
+```{r, echo=FALSE}
+boxcoxmodel = lm((((CO2_emissions_gpkm^0.989899)-1)/0.989899)               ~Engine_size_L+Cylinders+Fuel_type+Combined_Lp100km+Engine_size_L*Cylinders+Engine_size_L*Combined_Lp100km+Cylinders*Fuel_type+Cylinders*Combined_Lp100km+Fuel_type*Combined_Lp100km, data = fuel4)
+summary(boxcoxmodel)
+```
+###### Table 13: BOX COX transformation model.
+
+**Breusch-Pagan Test**
+```{r, echo=FALSE}
+bptest(boxcoxmodel)
+```
+Looking at the results of the BP test, we see that our BOX COX model STILL 
+doesn't pass the test, p-value is \< 2.2e-16, less than the significance level 
+of 0.01, we reject the null hypothesis and conclude that we still have 
+heteroscedasticity (unequal variance).
+
+The only other possible solution would be a log transformation
+
+**LOG TRANSFORMATION MODEL**
+
+```{r, echo=FALSE}
+logmodel = lm(log(CO2_emissions_gpkm)~Engine_size_L+Cylinders+Fuel_type+Combined_Lp100km+Engine_size_L*Cylinders+Engine_size_L*Combined_Lp100km+Cylinders*Fuel_type+Cylinders*Combined_Lp100km+Fuel_type*Combined_Lp100km, data = fuel4)
+summary(logmodel)
+```
+###### Table 14: Log transformation model.
+
+**Breusch-Pagan Test**
+```{r, echo=FALSE}
+bptest(logmodel)
+```
+Looking at the results of the BP test after the log transformation, we get a p 
+value of \< 2.2e-16, rejecting the null and saying that we still have unequal 
+variance.
+
+Since there is nothing else to try, this means that the least square
+method is not the right approach to model our data, and a more robust
+method would be suggested such as weight least squares regression.
+
+### 4. Normality
+
+To test for normality we will start with a qq-plot and a histogram. In
+this first histogram plot, we are looking for a normal-like distribution
+shape in the histogram to be able to say that we have normality within
+the data.
+
+```{r, echo=FALSE}
+ggplot(data=fuel4, aes(residuals(car_interaction_model2))) +  
+geom_histogram( col="green3", fill="green4") +  
+labs(title="Histogram for residuals") + 
+labs(x="residuals", y="Count")
+```
+
+###### Figure 15: Histogram to test for normality based on residuals. A normal plot should show equal distribution with a bell shaped curve.
+
+This histogram is clearly not following the shape of a normal
+distribution, but let's corroborate with a qq-plot and it's
+corresponding test:
+
+```{r, echo=FALSE}
+ggplot(fuel4, aes(sample=car_interaction_model2$residuals)) + 
+stat_qq() + 
+stat_qq_line() 
+```
+
+###### Figure 16: qq-plot to test for normality based on residuals. If our data is normal, the qq-plot should relatively follow our qq-line with little to no deviation away from it.
+
+Again, the data points on the ends are deviating significantly from the
+straight line demonstrating non-normality. Let's come up with a final
+conclusion by performing a Kolmogorov-Smirnov Test. NOTE: In most cases
+we would perform a Shapiro test, but that test has a limit between 3 and
+5000 data points, and in out case, we have 21,348 data points.
+
+```{r, echo=FALSE}
+length(residuals(car_interaction_model2)) 
+```
+
+**Kolmogorov-Smirnov Test**
+
+Kolmogorov-Smirnov test reference: (ks.test Function - RDocumentation,
+n.d.)
+
+Our hypotheses are: $$
+H_0: \text{the sample data are significantly normally distributed}
+$$ $$
+H_a: \text{the sample data are not significantly normally distributed}
+$$
+
+Since unequal variance and non-normality usually appear together and we
+have already tried transforming the data, we will test all three models
+at once (interaction model VS box cox model VS log transformed model)
+
+KS test assumes a normal distribution and since we have good indication
+from the plots above that we don't, it's important to add the mean and
+the standard deviation to the KS test.
+
+```{r, echo=FALSE}
+mean_residuals = mean(residuals(car_interaction_model2))
+sd_residuals = sd(residuals(car_interaction_model2))
+your_data <- c(1, 2, 2, 3, 4, 5)  # Data with ties
+suppressWarnings(ks.test(residuals(car_interaction_model2), "pnorm", mean = mean_residuals, sd = sd_residuals))
+```
+
+```{r, echo=FALSE}
+mean_residuals2 = mean(residuals(boxcoxmodel))
+sd_residuals2 = sd(residuals(boxcoxmodel))
+suppressWarnings(ks.test(residuals(boxcoxmodel), "pnorm", mean = mean_residuals2, sd = sd_residuals2))
+```
+
+```{r, echo=FALSE}
+mean_residuals3 = mean(residuals(logmodel))
+sd_residuals3 = sd(residuals(logmodel))
+suppressWarnings(ks.test(residuals(logmodel), "pnorm", mean = mean_residuals3, sd = sd_residuals2))
+```
+
+We can see that all three tests have a p value of \< 2.2e-16,
+approximating 0, meaning that we reject the null and conclude that the
+data is not normally distributed. Once again, we are at a dead end since
+we already tired the box-cox and log transformations that could have
+helped fix this issue with normality.
+
+### 5. Multicollinearity
+
+We test for multicollinearity because it reduces the precision of the
+estimate coefficients, which weakens the statistical power of our
+regression model. We initially test for multicolinearity to make sure we
+removed this problem from the beginning, but as part of the assumption
+testing, we will do it again.
+
+To test multicollinearity we will start by plotting the independent
+quantitative variables in the model.
+
+```{r, echo=FALSE}
+pairs(~Engine_size_L+Cylinders+Combined_Lp100km,data=fuel4) 
+```
+
+###### Figure 17: Plotted results from independent quantitative variables from our data set.
+
+In order to come to a conclusion, we performed a VIF (Variance inflation
+factor) test as we also did with our additive model:
+
+VIF test: 1. VIFs=1 indicates that there is no collinearity between this
+independent variable and any other independent variables. 2. 1 ≤ VIFs ≤
+5suggest that there is a moderate collinearity, but it is not severe
+enough to warrant corrective measures. 3. VIFs \> 5 or 10 represent
+critical levels of multicollinearity where the coefficients are poorly
+estimated, and the p-values are questionable.
+
+```{r, echo=FALSE}
+imcdiag(car_interaction_model2, method="VIF")
+```
+
+###### Table 15: VIF table used for detection of multicollinearity in our interaction model.
+
+While this might look alarming, specially because the VIF values are way
+beyond 5, as discussed in class, we can ignore this VIF test because our
+model contains every possible interaction for each term. Therefore, this
+high degree of multicollinearity is expected. This is why it was
+important to perform the VIF test at the beginning with the predictors
+only, because at this stage after having an interaction model, this VIF
+test becomes redundant.
+
+### 6. Outliers
+
+Lastly, we have to test for outliers.
+
+Cooks distance is one way to calculate the influence of a sample. A
+large value of Cook's Distance indicates that the observed value has
+strong influence on the estimated coefficients, and it measures the
+effect of deleting a given observation.
+
+We will start with a residuals vs leverage plot and cooks distance plot.
+We will search for Values with a greater cooks distance than 0.5
+
+```{r, echo=FALSE}
+plot(car_interaction_model2,which=5)
+```
+
+###### Figure 18: Residual vs Leverage plot with Cook's distance included to help assess for outliers.
+
+```{r}
+plot(car_interaction_model2,pch=18,col="red",which=c(4)) 
+fuel4[cooks.distance(car_interaction_model2)>0.5,]
+```
+
+###### Figure 19: Cooks Distance plot, which indicates how far away from Cook's distance specific datapoints that are outliers lay.
+
+As we can see from the residuals vs leverage plot, there are two data
+points beyond the permitted cook's distance dotted lines.When we look at
+the cook's distance plot, it is a lot more evident that we need to take
+a close look at these points.
+
+Coming from a government source, we consider this data to be reliable and we 
+don't have any reason to believe otherwise. On the other hand, we do not 
+have access to the researchers that gathered the data and the best
+approach would probably be to keep the data points as they are (assuming
+that these outliers are not mistakes). In this particular case, we want to test
+the effect that removing these points could have on our model. We will
+do it one at a time and see if this fixes any of our problems with the 
+previous assumption tests.
+
+Thus we will start by removing data point 162.
+
+```{r, echo=FALSE}
+fuel4_2 = fuel4[-162, ]
+car_interaction_model2_2 = lm(CO2_emissions_gpkm ~Engine_size_L+Cylinders+Fuel_type+Combined_Lp100km+Engine_size_L*Cylinders+Engine_size_L*Combined_Lp100km+Cylinders*Fuel_type+Cylinders*Combined_Lp100km+Fuel_type*Combined_Lp100km, data = fuel4_2)
+```
+
+Let's perform a BP test and KS test to see if there were any significant
+changes in our assumption testing
+
+```{r, echo=FALSE}
+bptest(car_interaction_model2_2)
+mean_residuals2_2 = mean(residuals(car_interaction_model2_2))
+sd_residuals2_2 = sd(residuals(car_interaction_model2_2))
+suppressWarnings(ks.test(residuals(car_interaction_model2_2), "pnorm", mean = mean_residuals2_2, sd = sd_residuals2_2))
+```
+
+We see both tests are still showing a p value close to 0 (\< 2.2e-16),
+less than our significance level of 0.01, and going off of our previous
+hypotheses, we reject the null and we still have unequal variance and
+non-normality.
+
+Let's take a look at the next influential data point with the highest
+Cook's Distance:
+
+```{r, echo=FALSE}
+plot(car_interaction_model2_2,pch=18,col="red",which=c(4)) 
+fuel4_2[cooks.distance(car_interaction_model2_2)>0.5,]
+```
+
+###### Figure 20: Cooks Distance plot, with a datapoint 162 removed from the model.
+
+We can see from the plot that the data point 12817 has a cooks distance
+well above 0.5. We will now remove it and test again.
+
+```{r, echo=FALSE}
+high_C = which(cooks.distance(car_interaction_model2_2) > 0.5)
+fuel4_3 = fuel4_2[-high_C, ]
+
+car_interaction_model2_3 = lm(CO2_emissions_gpkm~Engine_size_L+Cylinders+Fuel_type+Combined_Lp100km+Engine_size_L*Cylinders+Engine_size_L*Combined_Lp100km+Cylinders*Fuel_type+Cylinders*Combined_Lp100km+Fuel_type*Combined_Lp100km, data = fuel4_3)
+```
+
+Let's perform a BP test and KS test to see if there were any significant
+changes in our assumption testing:
+
+```{r, echo=FALSE}
+bptest(car_interaction_model2_3)
+mean_residuals2_3 = mean(residuals(car_interaction_model2_3))
+sd_residuals2_3 = sd(residuals(car_interaction_model2_3))
+suppressWarnings(ks.test(residuals(car_interaction_model2_3), "pnorm", mean = mean_residuals2_3, sd = sd_residuals2_3))
+```
+
+Once more we see both tests are still showing a p value close to 0 (\<
+2.2e-16), and following our previous hypotheses, we reject the null and
+we conclude that we still have unequal variance and non-normality.
+
+Let's take another look at the Cook's distance for the remaining data
+points:
+
+```{r, echo=FALSE}
+plot(car_interaction_model2_3,pch=18,col="red",which=c(4)) 
+fuel4_3[cooks.distance(car_interaction_model2_3)>0.5,]
+```
+
+###### Figure 21: Cooks Distance plot, with a datapoint 162 and datapoint 12817 removed from the model.
+
+Looking at the range of values on the y axis for the cook's distance
+plot, we see that we don't have any other data points with a Cook's
+Distance \> 0.5, and we can now conclude that we don't have any other
+influential points and this is where we stop.
+
+As mentioned, we decided to remove outliers with the large Cook's
+Distance to test what impact these would have on our model and to see if
+removing them would help solve our problems with unequal variance and
+normality. Having proven that they don't, and having said that we
+believe the data is accurate, we decided to settle on this final model:
+
+```{r, echo=FALSE}
+summary(car_interaction_model2)
+```
+
+###### Table 16: Summary statistics of final multiple linear regression model after completing assumption testing
+
+### FINAL MULTIPLE LINEAR REGRESSION MODEL
+
+$$
+\begin{align}
+\widehat{\text{CO2\_emissions\_gpkm}} = & -1.6994 
+- 0.4786X_{\text{Engine_size_L}} \\
+& - 0.4754X_{\text{Cylinders}} + 1.4519X_{\text{Fuel_typeE}} \\
+& - 12.7532X_{\text{Fuel_typeN}} + 2.4212X_{\text{Fuel_typeX}} \\
+& + 1.8735X_{\text{Fuel_typeZ}} + 27.6342X_{\text{Combined_Lp100km}} \\
+& + 0.1987X_{\text{Engine_size_L} \cdot \text{Cylinders}} \\ 
+& - 0.0522X_{\text{Engine_size_L} \cdot \text{Combined_Lp100km}} \\ 
+& + 1.6271X_{\text{Cylinders} \cdot \text{Fuel_typeE}} \\
+& - 17.3131X_{\text{Cylinders} \cdot \text{Fuel_typeN}} \\ 
+& + 0.7594X_{\text{Cylinders} \cdot \text{Fuel_typeX}} \\
+& + 0.6694X_{\text{Cylinders} \cdot \text{Fuel_typeZ}} \\
+& - 0.0564X_{\text{Cylinders} \cdot \text{Combined_Lp100km}} \\
+& - 11.5246X_{\text{Fuel_typeE} \cdot \text{Combined_Lp100km}} \\
+& - 0.3271X_{\text{Fuel_typeN} \cdot \text{Combined_Lp100km}} \\
+& - 4.3726X_{\text{Fuel_typeX} \cdot \text{Combined_Lp100km}} \\
+& - 4.2649X_{\text{Fuel_typeZ} \cdot \text{Combined_Lp100km}}
+\end{align}
+$$
+
+### MULTIPLE LINEAR REGRESSION SUBMODELS
+
+$$
+\begin{align}
+\widehat{CO2emissions} =  &-1.6994 - 0.4786X_{EngineSize}  - 0.4754 X_{Cylinders}+ 27.6342X_{Combined}
++0.1987X_{EngineSize} \cdot X_{Cylinders} -0.0522X_{EngineSize} \cdot X_{Combined}\\
+&- 0.0564X_{Cylinders} \cdot X_{Combined}\\
+&+
+\begin{cases} 
+0  & \mbox{if } i^{th}\mbox{Vehicle's Fuel type is D}\\
++1.4519 + 1.6271X_{Cylinders} -11.5246X_{Combine}& \mbox{if } i^{th}\mbox{Vehicle's Fuel type is E} \\
+-12.7532 -17.3131X_{Cylinders} -0.3271X_{Combine}& \mbox{if } i^{th}\mbox{Vehicle's Fuel type is N} \\
++2.4212 + 0.7594X_{Cylinders} -4.3726X_{Combine} & \mbox{if } i^{th}\mbox{Vehicle's Fuel type is X} \\
++1.8735 + 0.6694X_{Cylinders} -4.2649X_{Combine} & \mbox{if } i^{th}\mbox{Vehicle's Fuel type is Z} \\
+\end{cases}\\
+\\
+& =
+\begin{cases} 
+ - 1.6994 - 0.4786X_{EngineSize} - 0.4754 X_{Cylinders}+ 27.6342X_{Combined} \\
+  +0.1987X_{EngineSize} \cdot X_{Cylinders} -0.0522X_{EngineSize} \cdot X_{Combined} & \mbox{if } i^{th}\mbox{Vehicle's Fuel type is D}\\
+\\
+ -0.2475 - 0.4786X_{EngineSize} +  1.1517X_{Cylinders}  + 16.1096X_{Combined} \\
+ +0.1987X_{EngineSize} \cdot X_{Cylinders} -0.0522X_{EngineSize} \cdot X_{Combined} & \mbox{if } i^{th}\mbox{Vehicle's Fuel type is E} \\
+\\
+ -14.4526 - 0.4786X_{EngineSize} -17.7885X_{Cylinders}+ 27.3071X_{Combined}\\
+  +0.1987X_{EngineSize} \cdot X_{Cylinders} -0.0522X_{EngineSize} \cdot X_{Combined} & \mbox{if } i^{th}\mbox{Vehicle's Fuel type is N} \\
+\\
+ +0.7218 - 0.4786X_{EngineSize} + 0.284X_{Cylinders}+ 23.2616X_{Combined}\\
+  +0.1987X_{EngineSize} \cdot X_{Cylinders} -0.0522X_{EngineSize} \cdot X_{Combined} & \mbox{if } i^{th}\mbox{Vehicle's Fuel type is X} \\
+\\
+ +0.1741 - 0.4786X_{EngineSize} + 0.194X_{Cylinders}+ 23.36936X_{Combined} \\
+ +0.1987X_{EngineSize} \cdot X_{Cylinders} -0.0522X_{EngineSize} \cdot X_{Combined} & \mbox{if } i^{th}\mbox{Vehicle's Fuel type is Z} \\
+\end{cases}\\
+\end{align}
+$$
+
+### INTERPRETATIONS
+
+**Engine Size** NOTE: all fuel types have the same coefficient for
+engine size, therefore the following interpretation applies to all fuel
+types
+
+1.  The effect of EngineSize is
+    -0.4786+0.1987$X_{Cylinders}$-0.0522$X_{Combined}$, means that for
+    all Vehicles, an increase of 1 L in the total displacement of all
+    cylinders of the Engine Size leads to an increase in the CO2
+    emissions by -0.4786+0.1987$X_{Cylinders}$-0.0522$X_{Combined}$
+    g/km.
+
+**Cylinders**
+
+1.  The effect of cylinders is -0.4754+0.0.1987$X_{EngineSize}$, means
+    that for Vehicle's Fuel type of D and given amount of
+    $X_{Combined}$(are held constant), an increase of 1 unit of
+    cylinders leads to an increase in the CO2 emission by
+    -0.4754+0.0.1987$X_{EngineSize}$ g/km.
+
+2.  The effect of cylinders is 1.1517+0.0.1987$X_{EngineSize}$, means
+    that for Vehicle's Fuel type of E and given amount of
+    $X_{Combined}$(are held constant), an increase of 1 unit of
+    cylinders leads to an increase in the CO2 emission by
+    1.1517+0.0.1987$X_{EngineSize}$ g/km.
+
+3.  The effect of cylinders is -17.7885+0.0.1987$X_{EngineSize}$, means
+    that for Vehicle's Fuel type of N and given amount of
+    $X_{Combined}$(are held constant), an increase of 1 unit of
+    cylinders leads to an increase in the CO2 emission by
+    -17.7885+0.0.1987$X_{EngineSize}$ g/km.
+
+4.  The effect of cylinders is 0.284+0.0.1987$X_{EngineSize}$, means
+    that for Vehicle's Fuel type of X and given amount of
+    $X_{Combined}$(are held constant), an increase of 1 unit of
+    cylinders leads to an increase in the CO2 emission by
+    0.284+0.0.1987$X_{EngineSize}$ g/km.
+
+5.  The effect of cylinders is 0.194+0.0.1987$X_{EngineSize}$, means
+    that for Vehicle's Fuel type of Z and given amount of
+    $X_{Combined}$(are held constant), an increase of 1 unit of
+    cylinders leads to an increase in the CO2 emission by
+    0.194+0.0.1987$X_{EngineSize}$ g/km.
+
+**Combined**
+
+1.  The effect of Combined fuel consumption is
+    27.6342-0.0522$X_{EngineSize}$, means that for Vehicle's Fuel type
+    of D and given amount of $X_{Cylinders}$(are held constant), an
+    increase of 1 L/100km of Combined fuel consumption leads to an
+    increase in the CO2 emission by 27.6342-0.0522$X_{EngineSize}$ g/km.
+
+2.  The effect of Combined fuel consumption is
+    16.1096-0.0522$X_{EngineSize}$, means that for Vehicle's Fuel type
+    of E and given amount of $X_{Cylinders}$(are held constant), an
+    increase of 1 L/100km of Combined fuel consumption leads to an
+    increase in the CO2 emission by 16.1096-0.0522$X_{EngineSize}$ g/km.
+
+3.  The effect of Combined fuel consumption is
+    27.3071-0.0522$X_{EngineSize}$, means that for Vehicle's Fuel type
+    of N and given amount of $X_{Cylinders}$(are held constant), an
+    increase of 1 L/100km of Combined fuel consumption leads to an
+    increase in the CO2 emission by 27.3071-0.0522$X_{EngineSize}$ g/km.
+
+4.  The effect of Combined fuel consumption is
+    23.2616-0.0522$X_{EngineSize}$, means that for Vehicle's Fuel type
+    of X and given amount of $X_{Cylinders}$(are held constant), an
+    increase of 1 L/100km of Combined fuel consumption leads to an
+    increase in the CO2 emission by 23.2616-0.0522$X_{EngineSize}$ g/km.
+
+5.  The effect of Combined fuel consumption is
+    23.36936-0.0522$X_{EngineSize}$, means that for Vehicle's Fuel type
+    of Z and given amount of $X_{Cylinders}$(are held constant), an
+    increase of 1 L/100km of Combined fuel consumption leads to an
+    increase in the CO2 emission by 23.36936-0.0522$X_{EngineSize}$
+    g/km.
+
+**Other** $R^2_{adj}$=0.9981, the percent of variation in CO2 emission
+that can be explained by using this model is 99.81 %. The rest (0.19%)
+can be explained by other predictors.
+
+RSE = 2.758. This value shows the standard deviation of the unexplained
+variance in CO2 emission. It shows how far off using the model is from
+actual value of CO2 emission.
+
+## SUMMARY OF RESULTS
+
+Our final approach took the follow form:
+
+1)  A full additive model considering the variables that are crucial to
+    CO2 emissions.
+
+2)  Tested for individual significant of the predictors on the y
+    variable and for collinearity between these predictors. 
+
+3)  Removed terms that were not significant and those that showed collinearity 
+  
+4)  Created an interaction model and tested for significance
+    following the same p value criteria and adhering to the hierarchical
+    principle.
+
+5)  Performed assumption testing on linearity, multicollinearity,
+    homoscedasticity, normality and outliers (independence was briefly
+    discussed).
+
+There was the consideration to try higher order terms but decided
+against it since there was no indication of non linearity in our pairwise
+plots or on the residuals vs fitted plots.
+
+Unfortunately, our model did not pass the normality and homoscedasticity tests 
+even after applying box cox and log transformation.
+
+A summary of our results is outlined in the tables below.
+
+| **Best Model** | **RSE** | **Adjusted R-Squared** | **Full Model p-value** |
+|------------------|------------------|------------------|------------------|
+| car_interaction_model2 | 2.758 | 0.9981 | 2.2e-16 |
+
+###### Table 17: Concluding details of our final model
+\
+\
+
+| **Assumption Testing** | **Test/Plots** | **Value/Observation** | **Passed** |
+|------------------|------------------|------------------|------------------|
+| **Linearity Assumption** | Residuals and pairwise plots | No clustering or visible patterns/trends | Yes |
+| **Independence** | N/A | Cross-sectional data, no time-series | Yes |
+| **Homoscedasticity** | Residuals and scale-location plots | p-values \< 2.2e-16 (even after Box-Cox and log transformations) | No |
+|  | Breusch-Pagan test |  |  |
+| **Normality** | QQ plot and Histograms | p-values \< 2.2e-16 (even after Box-Cox and log transformations) | No |
+|  | KS test |  |  |
+| **Multicollinearity** | VIF test | All interaction terms involve the main effects, thus expected multicollinearity | N/A (Yes) |
+| **Outliers** | Cook's distance plot and test | Tested removing influential points with Cook's distance values \> 0.5 | N/A |
+
+###### Table 18: Summary of results of assumption testing
+
+Note: every single individual hypothesis test for model selection or assumption 
+testing was shown earlier with its respective p value an interpretation. 
+
+While our interaction model seemed promising with a very high adjusted R
+squared and a very good RSE, the model didn't pass all the assumptions
+and therefore we conclude that the results from the model are not
+reliable for predictions, and as mentioned earlier, a more robust method
+should be explored. Some options would be ridge regression, lasso
+regression, weighted least squares regression, generalized least squares
+regression, etc.
+
+------------------------------------------------------------------------
+
+# 4. CONCLUSION AND DISCUSSION
+
+## Approach
+
+Overall, our approach to modelling CO2 emissions in vehicles was
+promising in many aspects. We initially constructed a comprehensive
+additive model that included all the key predictors, such as engine
+size, combined fuel consumption, fuel type, and cylinders, and ensured the
+significance of these variables with respect to CO2 emissions. We even
+plotted these variables with respect to CO2 emissions, which helped
+drive our analysis further and allowed us to identify meaningful
+relationships between the vehicle characteristics and CO2 emissions.
+
+We used stepwise and best subset methods to further validate this and
+also merged the predictors based on multicollinearity. This further
+helped validate the key predictors for our model through different
+regression approaches. Our model was further enhanced with the addition
+of interactions, demonstrating a high adjusted R-squared and low
+residual standard error (RSE) partially meeting the goal for our
+initial research question. However, despite the promising fit, our
+model ultimately did not pass all key assumptions, such as normality and
+homoscedasticity, even after log and Box-Cox transformations. This
+suggests that, despite a promising start, the reliability of our model
+was limited due to the assumptions not being met. Due to this, our final model
+is unreliable and we cannot answer either of our research questions 
+investigating the definitive factors affection CO2 emissions in vehicles or the
+ relationship of fuel consumption and CO2 emissions. 
+ 
+It would be worthwhile to consider alternative statistical techniques
+that could better address the violations of the assumptions observed in
+our analysis. Methods such as ridge regression or lasso regression could
+potentially offer more robust solutions by addressing multicollinearity
+and overfitting by shrinking the coefficient values. Weighted least
+squares regression could also be considered to handle
+heteroscedasticity. These alternative approaches may allow for more
+reliable insights into the factors influencing CO2 emissions in
+vehicles.
+
+
+## Conclusion
+
+In conclusion, while our analysis provided some valuable insights into
+the relationship between vehicle characteristics and CO2 emissions, the
+limitations of our model, particularly in terms of assumption
+violations, highlight the need for further refinement. The promising
+R-squared values and relatively low residual error indicate that the
+model had the potential to be useful for understanding CO2 emissions in
+vehicles. However, given the assumptions that were not met, we caution
+against using this model for reliable predictions. Ultimately, our work
+contributes to the ongoing effort to better understand the factors
+influencing CO2 emissions in the transportation sector, a critical issue
+in the context of climate change.
+
+## Future Work
+
+For future work, we recommend exploring more robust regression methods
+that can better accommodate the assumptions violated in our current
+model. Specifically, addressing issues related to non-normality and
+heteroscedasticity should be a priority. The use of regularization
+techniques like ridge or lasso regression could help mitigate
+collinearity and improve model performance. Additionally, utilizing
+weighted least squares regression could help in dealing with unequal
+variances across the data.
+------------------------------------------------------------------------
+
+# 5. REFERENCES
+1.  Canada, N. R. (n.d.). *Fuel consumption ratings—Open government portal*. Retrieved December 1, 2024, from https://open.canada.ca/data/en/dataset/98f1a129-f628-4ce4-b24d-6f16bf24dd64a
+
+2.  Transport Canada. (2022, June 27). *Greenhouse gas emissions*.
+    Retrieved from
+    <https://www.tc.canada.ca/en/corporate-services/transparency/corporate-management-reporting/transportation-canada-annual-reports/2021/greenhouse-gas-emissions>?
+
+3.  *Greenhouse Gas Emissions from a Typical Passenger Vehicle \| US
+    EPA*. (2024, August 23). US EPA.
+    <https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle#>:\~:text=A%20typical%20passenger%20vehicle%20emits,of%20miles%20driven%20per%20year
+
+4.  Canada, N. R. (2024, June 19). *Understanding the tables*.
+    <https://natural-resources.canada.ca/energy-efficiency/transportation-alternative-fuels/personal-vehicles/choosing-right-vehicle/buying-electric-vehicle/understanding-the-tables/21383>
+
+5.  *ks.test function - RDocumentation*. (n.d.).
+    <https://www.rdocumentation.org/packages/dgof/versions/1.5.1/topics/ks.test>
+    
+6. The great majority of the work is based on DATA 603 class notes provided by professor Thuntida Ngamkham and Mina Aminghafari
