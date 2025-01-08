@@ -23,11 +23,11 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ::: {style="text-align: center;"}
 ## Team Members
 
-Carlos Arteaga (30043610)\
-Abdul Suhaib (30124033)\
+Carlos Arteaga \
+Abdul Suhaib \
 Nadeem Bishtawi\
-Yifeng Liang (30072968)\
-Michael Moon (30270188)
+Yifeng Liang \
+Michael Moon 
 :::
 
 # 1. INTRODUCTION
